@@ -18,7 +18,7 @@ use tokio::sync::mpsc;
 #[command(author, version, about, long_about)]
 struct Args {
   /// Commands to run, use multiple times for concurrent processes
-  #[arg(long)]
+  #[arg(long, required = true)]
   cmd: Vec<String>,
 }
 
