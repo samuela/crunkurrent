@@ -18,11 +18,9 @@
         };
 
         # `nix run`
-        apps.crunkurrent = utils.lib.mkApp {
+        apps.default = utils.lib.mkApp {
           drv = packages.default;
         };
-        apps.cr = apps.crunkurrent;
-        apps.default = apps.crunkurrent;
 
         # `nix develop`
         devShell = pkgs.mkShell {

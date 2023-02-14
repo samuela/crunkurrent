@@ -7,7 +7,7 @@ A Lil Jon-inspired multitasking tool.
 crunkurrent lets you run tasks concurrently:
 
 ```
-$ cr \
+$ crunkurrent \
     --cmd "npm run dev" \
     --cmd "cd api && flask run"
 71170    ├ [started 'npm run dev']
@@ -26,5 +26,6 @@ You can think of it kinda like docker-compose but for arbitrary shell commands i
 crunkurrent is available as a Nix flake. [Install Nix](https://nixos.org/download.html) and [enable flakes](https://serokell.io/blog/practical-nix-flakes). Then you can play around with crunkurrent with
 
 ```
-nix shell github:samuela/crunkurrent
+$ nix shell github:samuela/crunkurrent
+(shell) $ crunkurrent --cmd ...
 ```
