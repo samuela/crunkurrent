@@ -12,22 +12,21 @@
       in
       rec {
         # `nix build`
-        packages.crunkurrent = naersk-lib.buildPackage {
+        packages.default = naersk-lib.buildPackage {
           pname = "crunkurrent";
           root = ./.;
         };
-        defaultPackage = packages.crunkurrent;
 
         # `nix run`
         apps.crunkurrent = utils.lib.mkApp {
-          drv = packages.crunkurrent;
+          drv = packages.default;
         };
-        # apps.cr = apps.crunkurrent;
-        defaultApp = apps.crunkurrent;
+        apps.cr = apps.crunkurrent;
+        apps.default = apps.crunkurrent;
 
         # `nix develop`
         devShell = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [ rustc cargo ];
+          nativeBuildInputs = with pkgs; ([ rustc cargo rustfmt ] ++ lib.optionals stdenv.isDarwin [ libiconv ]);
         };
       });
 }
