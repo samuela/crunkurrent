@@ -4,6 +4,7 @@ use colored::Colorize;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
+use std::process::Stdio;
 
 /// Run programs concurrently.
 ///
@@ -85,6 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       let mut child: Child = Command::new("sh")
         .arg("-c")
         .arg(&cmd_)
+        .stdin(Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
