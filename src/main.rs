@@ -1,9 +1,6 @@
 use clap::Parser;
 use colored::Color::{self, TrueColor};
 use colored::Colorize;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::Hash;
-use std::hash::Hasher;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
@@ -25,24 +22,9 @@ struct Args {
 // https://coolors.co/ff595e-ff924c-ffca3a-c5ca30-8ac926-52a675-1982c4-4267ac-6a4c93
 static COLORS: &'static [Color] = &[
   TrueColor {
-    r: 255,
-    g: 89,
-    b: 84,
-  },
-  TrueColor {
-    r: 255,
-    g: 146,
-    b: 67,
-  },
-  TrueColor {
-    r: 255,
-    g: 202,
-    b: 58,
-  },
-  TrueColor {
-    r: 197,
-    g: 202,
-    b: 48,
+    r: 106,
+    g: 76,
+    b: 147,
   },
   TrueColor {
     r: 138,
@@ -50,9 +32,9 @@ static COLORS: &'static [Color] = &[
     b: 38,
   },
   TrueColor {
-    r: 82,
-    g: 166,
-    b: 117,
+    r: 255,
+    g: 202,
+    b: 58,
   },
   TrueColor {
     r: 25,
@@ -60,22 +42,31 @@ static COLORS: &'static [Color] = &[
     b: 196,
   },
   TrueColor {
+    r: 255,
+    g: 89,
+    b: 84,
+  },
+  TrueColor {
+    r: 82,
+    g: 166,
+    b: 117,
+  },
+  TrueColor {
+    r: 197,
+    g: 202,
+    b: 48,
+  },
+  TrueColor {
+    r: 255,
+    g: 146,
+    b: 67,
+  },
+  TrueColor {
     r: 66,
     g: 103,
     b: 172,
   },
-  TrueColor {
-    r: 106,
-    g: 76,
-    b: 147,
-  },
 ];
-
-fn calculate_hash<T: Hash>(t: &T) -> u64 {
-  let mut s = DefaultHasher::new();
-  t.hash(&mut s);
-  s.finish()
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -85,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let (stderr_tx, mut stderr_rx) = mpsc::unbounded_channel();
   let (waits_tx, mut waits_rx) = mpsc::unbounded_channel();
 
-  for cmd in &args.cmd {
+  for (i, cmd) in args.cmd.iter().enumerate() {
     let stdout_tx_ = stdout_tx.clone();
     let stderr_tx_ = stderr_tx.clone();
     let waits_tx_ = waits_tx.clone();
@@ -100,10 +91,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("failed to spawn");
       let pid: u32 = child.id().expect("could not get child pid");
 
-      // Pick color based on the command instead of the pid so that colors are consistent across invocations.
-      let pid_with_color = pid
-        .to_string()
-        .color(COLORS[(calculate_hash(&cmd_) as usize) % COLORS.len()]);
+      // Pick color based on the command order instead of the pid so that colors are consistent across invocations.
+      let pid_with_color = pid.to_string().color(COLORS[i % COLORS.len()]);
 
       eprintln!("{:<8} ├ [started '{}']", &pid_with_color, cmd_);
 
