@@ -1,10 +1,12 @@
 use clap::Parser;
 use colored::Color::{self, TrueColor};
 use colored::Colorize;
+use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
-use std::process::Stdio;
 
 /// Run programs concurrently.
 ///
@@ -77,11 +79,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let (stderr_tx, mut stderr_rx) = mpsc::unbounded_channel();
   let (waits_tx, mut waits_rx) = mpsc::unbounded_channel();
 
+  // See https://github.com/samuela/crunkurrent/issues/1.
+  let running = Arc::new(AtomicBool::new(true));
+  let running_ = running.clone();
+  ctrlc::set_handler(move || {
+    eprintln!("Sending kill signal to subprocesses");
+    running_.store(false, Ordering::SeqCst);
+  })
+  .expect("Error setting Ctrl-C handler");
+
   for (i, cmd) in args.cmd.iter().enumerate() {
     let stdout_tx_ = stdout_tx.clone();
     let stderr_tx_ = stderr_tx.clone();
     let waits_tx_ = waits_tx.clone();
     let cmd_ = cmd.clone();
+    let running_ = running.clone();
     tokio::spawn(async move {
       let mut child: Child = Command::new("sh")
         .arg("-c")
@@ -114,6 +126,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       .lines();
 
       loop {
+        if !running_.load(Ordering::SeqCst) {
+          child.kill().await.expect("failed to kill child process");
+          // We don't `break` here; instead we let `child.wait()` resolve in the `tokio::select!` below and proceed as
+          // usual from there.
+        }
         tokio::select! {
           // Always take stdout/stderr before the exit status.
           biased;
@@ -136,10 +153,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       Some((pid, line)) = stdout_rx.recv() => { println!("{:<8} │ {}", pid, line); }
       Some((pid, line)) = stderr_rx.recv() => { eprintln!("{:<8} │ {}", pid, line); }
       Some((pid, exitcode)) = waits_rx.recv() => {
-        let code = exitcode.code().expect("failed to get exit code");
-        eprintln!("{:<8} ├ [exited with status {}]", pid, code);
+        if let Some(code) = exitcode.code() {
+          eprintln!("{:<8} ├ [exited with status {}]", pid, code);
+          max_status = std::cmp::max(max_status, code);
+        } else {
+          eprintln!("{:<8} ├ [exited with {}]", pid, exitcode);
+          // Note: we don't update max_status here since, technically speaking, we don't have an exit code.
+        }
         finished += 1;
-        max_status = std::cmp::max(max_status, code);
         if finished == args.cmd.len() { break; }
       }
     }
