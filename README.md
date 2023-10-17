@@ -29,3 +29,7 @@ crunkurrent is available as a Nix flake. [Install Nix](https://nixos.org/downloa
 $ nix shell github:samuela/crunkurrent
 (shell) $ crunkurrent --cmd ...
 ```
+
+## Related work
+
+If you like crunkurrent, you might also like [mprocs](https://github.com/pvolok/mprocs) and [concurrently](https://github.com/open-cli-tools/concurrently).
